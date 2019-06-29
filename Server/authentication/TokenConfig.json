@@ -1,0 +1,7 @@
+{
+    "secret": "documents_secret",
+    "refreshTokenSecret": "documents_secret",
+    "tokenLife": "2h",
+    "refreshTokenLife": "1d",
+    "algorithm": "RS256"
+}
