@@ -1,8 +1,8 @@
 var React = require('react');
 var mongodb = require('mongodb');
-const config = require('./config.json')
+const config = require('../config.json')
 
-var userCollection = 'users'
+var userCollection = 'share.user'
 
 var response = {
     result: false,

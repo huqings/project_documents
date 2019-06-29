@@ -4,6 +4,7 @@ var app = express()
 app.use(require('cors')());
 app.use(require('body-parser').json());
 
+app.use('/setup', require('./api/setup'));
 app.use('/login', require('./api/login'));
 app.use('/down', require('./api/down'));
 

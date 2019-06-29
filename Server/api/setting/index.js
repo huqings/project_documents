@@ -1,9 +1,9 @@
 var express = require('express')
 var router = express.Router();
+var common = require('../common')
 
-const common = require('../common')
-const systemCollection = 'system'
-const logsCollection = 'logs'
+const systemCollection = 'share.system'
+const logsCollection = 'share.log'
 
 router.post('/home', (req, res) => {
     const info = JSON.parse(req.headers['x-access-info'])

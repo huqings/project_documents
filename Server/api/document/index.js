@@ -2,14 +2,13 @@ var express = require('express');
 var router = express.Router();
 var multiparty = require('connect-multiparty')();
 var fs = require('fs');
-
 var mongodb = require('mongodb');
-const config = require('../config')
-const common = require('../common')
+var config = require('../../config')
+var common = require('../common')
 
-const usersCollection = "users"
-const rolesCollection = "roles"
-const downCollection = "down"
+const usersCollection = "share.user"
+const rolesCollection = "share.role"
+const downCollection = "share.down"
 
 router.post('/lists', (req, res) => {
     const info = JSON.parse(req.headers['x-access-info'])
@@ -33,6 +32,36 @@ router.post('/lists', (req, res) => {
                 }
                 else {
                     lists(req, response).then(v => {
+                        res.status(200).json(v)
+                    })
+                }
+            })
+        }
+    })
+})
+
+router.post('/intofolder', (req, res) => {
+    const info = JSON.parse(req.headers['x-access-info'])
+
+    let response = {
+        result: false
+    }
+
+    let module = ['_1', '0']
+
+    new common().CheckIdentity(info.i, info.p).then((i, _) => {
+        if (!i.result) {
+            response.message = i.message
+            res.status(200).json(response)
+        }
+        else {
+            new common().CheckPermission(info.p, module).then((i) => {
+                if (!i.result) {
+                    response.message = i.message
+                    res.status(200).json(response)
+                }
+                else {
+                    intofolder(req, response).then(v => {
                         res.status(200).json(v)
                     })
                 }
@@ -557,6 +586,34 @@ router.post('/tofolder', (req, res) => {
 })
 
 function lists(req, res) {
+    let info = JSON.parse(req.headers['x-access-info'])
+
+    let conditions = {
+        "metadata.userId": info.i,
+        "metadata.path": req.body.path
+    }
+
+    return new Promise((resolve, _) => {
+        new common().Connect().then((dbo, _) => {
+            var bucket = new mongodb.GridFSBucket(dbo);
+            bucket.find(conditions)
+                .sort({ "metadata.type": 1, 'uploadDate': -1 })
+                .toArray(function (err, result) {
+                    if (err) throw err;
+                    if (result.length > 0) {
+                        res.result = true
+                        res.message = result
+                    }
+                    else {
+                        res.message = "没有任何文件"
+                    }
+                    resolve(res)
+                })
+        })
+    })
+}
+
+function intofolder(req, res) {
     let info = JSON.parse(req.headers['x-access-info'])
 
     let conditions = {

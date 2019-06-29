@@ -1,11 +1,11 @@
 var express = require('express')
 var router = express.Router();
 var mongodb = require('mongodb');
-const config = require('../config')
+const config = require('../../config')
 const common = require('../common')
 
-const roleCollection = "roles"
-const userCollection = "users"
+const roleCollection = "share.role"
+const userCollection = "share.user"
 
 router.post('/home', (req, res) => {
     const info = JSON.parse(req.headers['x-access-info'])

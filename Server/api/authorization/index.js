@@ -4,8 +4,8 @@ var mongodb = require('mongodb');
 
 const common = require('../common')
 
-const roleRollection = "roles"
-const userRollection = "users"
+const roleRollection = "share.role"
+const userRollection = "share.user"
 
 router.post('/home', (req, res) => {
     const info = JSON.parse(req.headers['x-access-info'])
@@ -75,13 +75,13 @@ function home(req, res) {
                     res.message = result
                 }
                 else {
-                    res.message = '没有相关数据.'
+                    res.message = '没有角色信息,请先在[人员角色]设置.'
                 }
                 resolve(res);
             })
         })
     })
-    
+
 }
 
 function update(req, res) {
@@ -131,7 +131,7 @@ function update(req, res) {
                         res.message = '没有相关数据.'
                         resolve(res)
                     }
-                    
+
                 })
         })
     })

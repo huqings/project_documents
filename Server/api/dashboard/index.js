@@ -1,9 +1,9 @@
 var express = require('express')
 var router = express.Router();
 var mongodb = require('mongodb');
+var common = require('../common')
 
-const common = require('../common')
-const usersRollection = "users"
+const usersRollection = "share.user"
 
 router.post('/', (req, res) => {
 

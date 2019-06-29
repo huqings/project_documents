@@ -4,7 +4,7 @@ var md5 = require('md5')
 var mongodb = require('mongodb');
 const common = require('../common')
 
-const userCollection = "users"
+const userCollection = "share.user"
 const roleCollection = "roles"
 
 router.post('/home', (req, res) => {
@@ -269,9 +269,13 @@ function home(req, res) {
 }
 
 function add(req, res) {
+
+    let info = req.body
+    info.passWord = md5Pwd(info.passWord)
+
     return new Promise((resolve, _) => {
         new common().Connect().then(dbo => {
-            dbo.collection(userCollection).insertOne(req.body, function (err, result) {
+            dbo.collection(userCollection).insertOne(info, function (err, result) {
                 if (err) throw err;
                 if (result.insertedCount > 0) {
                     res.result = true

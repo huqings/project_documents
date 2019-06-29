@@ -1,12 +1,13 @@
 var express = require('express')
 var router = express.Router();
 var mongodb = require('mongodb');
+var common = require('../common')
 
-const common = require('../common')
+const downCollection = "share.down"
 
 router.get('/:id', (req, res) => {
     new common().Connect().then((dbo) => {
-        dbo.collection('down').find({
+        dbo.collection(downCollection).find({
             sid: req.params.id,
             expireTime: { "$gt": new Date().getTime() }
         }).toArray((_, r) => {

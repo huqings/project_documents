@@ -4,19 +4,18 @@ var md5 = require('md5')
 const jwt = require('jsonwebtoken')
 const secretConfig = require('../../authentication/TokenConfig')
 
-const config = require('../config')
+const config = require('../../config')
 const common = require('../common')
 
-const usersCollection = "users"
-const logsCollection = "logs"
+const usersCollection = "share.user"
+const logsCollection = "share.log"
 
 router.post('/', (req, res) => {
 
     const postData = req.body;
 
     let response = {
-        result: false,
-        message: ''
+        result: false
     }
 
     new common().Connect().then((dbo, _) => {
@@ -34,7 +33,7 @@ router.post('/', (req, res) => {
                         "actionDetails": "登录失败,账户禁用"
                     })
 
-                    response.message = '账户已被禁用,如有误请联系管理员.'
+                    response.message = '你的账户已被禁止使用,如有误请联系管理员.'
                     res.status(200).json(response);
 
                 }
@@ -46,7 +45,7 @@ router.post('/', (req, res) => {
                         "actionDetails": "登录失败,账户无权限"
                     })
 
-                    response.message = '账户没有权限,无法使用分享.'
+                    response.message = '当前用户没有使用权限,如有误请联系管理员.'
                     res.status(200).json(response);
                 }
                 else {
@@ -91,12 +90,26 @@ router.post('/', (req, res) => {
                     "actionDetails": "登录失败"
                 })
 
-                response.message = '登录验证失败,请重新尝试.'
+                response.message = '你输入的账户或密码有误,请重新尝试.'
                 res.status(200).json(response);
             }
         })
     })
+})
 
+router.post('/init', (req, res) => {
+
+    let response = {
+        result: false
+    }
+
+    if (config.App === 'share') {
+        res.status(200).json(response);
+    }
+    else {
+        response.result = true
+        res.status(200).json(response);
+    }
 })
 
 router.post('/register', (req, res) => {
@@ -134,14 +147,14 @@ router.post('/register', (req, res) => {
                         res.status(200).json(response);
                     }
                     else {
-                        response.message = '登录邮箱验证失败,请重新登录.'
+                        response.message = '注册失败.'
                         res.status(200).json(response);
                     }
                 });
             }
             else {
                 response.result = true
-                response.message = '邮箱已被注册，请重新输入其它邮箱。'
+                response.message = '邮箱已被注册，请重新输入邮箱。'
                 res.status(200).json(response);
             }
         })
