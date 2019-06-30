@@ -642,7 +642,6 @@ function intofolder(req, res) {
 }
 
 function rename(req, res) {
-    console.log(req.body.fileName)
     return new Promise((resolve, _) => {
         new common().Connect().then((dbo, _) => {
             dbo.collection(config.DB_files).updateOne({
@@ -949,7 +948,6 @@ function unshare(req, res) {
 }
 
 function shareinfo(req, res) {
-
     return new Promise((resolve, _) => {
         new common().Connect().then((dbo) => {
             var bucket = new mongodb.GridFSBucket(dbo);
@@ -958,13 +956,14 @@ function shareinfo(req, res) {
             }).toArray((_, r) => {
                 if (r.length > 0) {
                     res.result = true
-                    if (req.body.publicShareId !== '') {
+                    if (r[0].metadata.publicShareId !== '') {
                         dbo.collection(downCollection).findOne({
-                            sid: req.body.publicShareId
+                            fileId: r[0].metadata.publicShareId
                         }, (_, v) => {
                             res.message = {
                                 expireTime: v.expireTime,
                                 shareUrlPath: v.urlPath,
+                                downloadCode: v.downloadCode,
                                 file: r[0]
                             }
                             resolve(res)
@@ -986,10 +985,11 @@ function sharepublic(req, res) {
     return new Promise((resolve, _) => {
         new common().Connect().then(dbo => {
             dbo.collection(downCollection).insertOne({
-                sid: req.body.url.split('/down/')[1],
+                sid: req.body.url.split('/download/')[1],
                 urlPath: req.body.url,
                 fileId: req.body.fileId,
-                expireTime: new Date(req.body.expireTime).getTime()
+                expireTime: new Date(req.body.expireTime).getTime(),
+                downloadCode: req.body.downloadCode
             }, (err, result) => {
                 if (err) throw err;
                 if (result.insertedCount > 0) {
@@ -1038,11 +1038,12 @@ function shareclosepublic(req, res) {
                             $set: {
                                 'metadata.status': 0,
                                 'metadata.publicShareId': '',
-                                'metadata.publicShareExpireTime': 0,
+                                'metadata.publicShareExpireTime': '',
                                 'metadata.publicShareUrl': ''
                             }
                         }, (_, r) => {
                             if (r.matchedCount > 0) {
+                                dbo.collection(downCollection).deleteOne({ "fileId": req.body.fileId })
                                 res.result = true
                                 res.message = '操作成功.'
                                 resolve(res)
