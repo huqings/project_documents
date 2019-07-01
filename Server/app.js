@@ -1,11 +1,15 @@
 var express = require('express')
+var cors = require('cors')
 var app = express()
 
-app.use(require('cors')());
+app.use(cors({
+    exposedHeaders: ['Content-Disposition'],
+}));
 app.use(require('body-parser').json());
 
 app.use('/setup', require('./api/setup'));
 app.use('/login', require('./api/login'));
+app.use('/download', require('./api/download'));
 app.use('/down', require('./api/down'));
 
 // ==================================================

@@ -1065,38 +1065,21 @@ function deletes(req, res) {
                 "metadata.type": 0
             }).toArray((_, r) => {
                 if (r.length > 0) {
-                    let path = (req.body.path + '/').replace('/', '\/')
-                    if (path === '//') {
-                        bucket.find({
-                            "metadata.location": { $regex: `/${req.body.filename}` }
-                        }).toArray((_, r) => {
-                            if (r.length > 1 || r.length === 0) {
-                                res.message = "[失败]文件夹内存在文件或文件夹,无法删除."
+                    let path = req.body.path.replace('//', '/').replace('/', '\/')
+                    bucket.find({
+                        "metadata.location": { $regex: `${path}` }
+                    }).toArray((_, s) => {
+                        if (s.length === 1) {
+                            bucket.delete(mongodb.ObjectID(req.body._id), function (err, v) {
+                                res.result = true
+                                res.message = "删除成功"
                                 resolve(res)
-                            } else {
-                                bucket.delete(mongodb.ObjectID(req.body._id), function (err, v) {
-                                    res.result = true
-                                    res.message = "删除成功"
-                                    resolve(res)
-                                })
-                            }
-                        })
-                    } else {
-                        bucket.find({
-                            "metadata.location": { $regex: path }
-                        }).toArray((_, r) => {
-                            if (r.length > 1 || r.length === 0) {
-                                res.message = "[失败]文件夹内存在文件或文件夹,无法删除."
-                                resolve(res)
-                            } else {
-                                bucket.delete(mongodb.ObjectID(req.body._id), function (err, v) {
-                                    res.result = true
-                                    res.message = "删除成功"
-                                    resolve(res)
-                                })
-                            }
-                        })
-                    }
+                            })
+                        } else {
+                            res.message = "删除失败,包含有文件或文件夹."
+                            resolve(res)
+                        }
+                    })
                 } else {
                     bucket.delete(mongodb.ObjectID(req.body._id), function (err, v) {
                         res.result = true
