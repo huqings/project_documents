@@ -221,8 +221,41 @@ router.post('/createfolder', (req, res) => {
     })
 })
 
-router.get('/down', (req, res) => {
-    down(req, res)
+router.post('/down', (req, res) => {
+    const info = JSON.parse(req.headers['x-access-info'])
+
+    let module = ['_1', '1']
+
+    new common().CheckIdentity(info.i, info.p).then((i, _) => {
+        if (!i.result) {
+            response.message = i.message
+            res.status(200).json(response)
+        }
+        else {
+            new common().CheckPermission(info.p, module).then((i) => {
+                if (!i.result) {
+                    res.status(200).json({})
+                }
+                else {
+
+                    new common().Connect().then((dbo) => {
+                        var bucket = new mongodb.GridFSBucket(dbo);
+                        bucket.find({ "_id": mongodb.ObjectID(req.body.id) }).toArray(function (err, files) {
+                            if (files.length > 0) {
+                                var downloadStream = bucket.openDownloadStream(files[0]._id)
+                                res.writeHead(200, {
+                                    "Content-Type": "application/octet-stream",
+                                    "Content-Disposition": encodeURI(files[0].metadata.filename + '.' + files[0].metadata.typename)
+                                });
+                                downloadStream.pipe(res)
+                            }
+                        })
+                    })
+
+                }
+            })
+        }
+    })
 })
 
 router.post('/shareinfo', (req, res) => {
@@ -840,71 +873,33 @@ function createfolder(req, res) {
     })
 }
 
-function down(req, res) {
-    new common().Connect().then((dbo) => {
-        var bucket = new mongodb.GridFSBucket(dbo);
-        bucket.find({ "_id": mongodb.ObjectID(req.query.id) }).toArray(function (err, files) {
-            var downloadStream = bucket.openDownloadStream(files[0]._id)
-            res.setHeader('Content-disposition', 'attachment; filename=' + encodeURI(files[0].filename))
-            res.setHeader('Content-type', 'text/html')
-            downloadStream.pipe(res);
-        })
-    })
-}
-
 function share(req, res) {
     let info = JSON.parse(req.headers['x-access-info'])
 
     return new Promise((resolve, _) => {
         new common().Connect().then((dbo) => {
-            let k = []
-            req.body.shareUsersList.map(x => {
-                if (x.type) {
-                    dbo.collection(config.DB_files).updateOne({
-                        '_id': mongodb.ObjectID(req.body._id),
-                    }, {
-                            $set: {
-                                'metadata.shareId': req.body.shareUsersList,
-                                'metadata.status': 1
-                            }
-                        }, () => {
-                            dbo.collection(usersCollection).findOne({
-                                '_id': mongodb.ObjectID(info.i)
-                            }, (_, y) => {
-                                dbo.collection(usersCollection).updateOne({
-                                    '_id': mongodb.ObjectID(info.i)
-                                }, {
-                                        $set: {
-                                            'shareCount': y.shareCount + 1
-                                        }
-                                    })
-                            })
-                        })
-                } else {
-                    dbo.collection(rolesCollection).findOne({
-                        '_id': mongodb.ObjectID(x._id),
+            dbo.collection(config.DB_files).updateOne({
+                '_id': mongodb.ObjectID(req.body._id),
+            }, {
+                    $set: {
+                        'metadata.shareId': req.body.shareUsersList,
+                        'metadata.status': 1
+                    }
+                }, () => {
+                    dbo.collection(usersCollection).findOne({
+                        '_id': mongodb.ObjectID(info.i)
                     }, (_, y) => {
-                        y.member.map(z => {
-                            k.push({
-                                _id: z.id,
-                                accountName: z.accountName,
-                                displayName: z.displayName,
-                                type: true
-                            })
-                        })
-                        dbo.collection(config.DB_files).updateOne({
-                            '_id': mongodb.ObjectID(req.body._id),
+                        dbo.collection(usersCollection).updateOne({
+                            '_id': mongodb.ObjectID(info.i)
                         }, {
                                 $set: {
-                                    'metadata.shareId': k,
-                                    'metadata.status': 1
+                                    'shareCount': y.shareCount + 1
                                 }
                             })
+                        res.message = '分享成功.'
+                        resolve(res)
                     })
-                }
-            })
-            res.message = '分享成功.'
-            resolve(res)
+                })
         })
     })
 }

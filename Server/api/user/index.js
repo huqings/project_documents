@@ -1,5 +1,7 @@
 var express = require('express')
 var router = express.Router();
+var multiparty = require('connect-multiparty')();
+var fs = require('fs');
 var md5 = require('md5')
 var mongodb = require('mongodb');
 const common = require('../common')
@@ -29,6 +31,36 @@ router.post('/home', (req, res) => {
                 }
                 else {
                     home(req, response).then(v => {
+                        res.status(200).json(v)
+                    })
+                }
+            })
+        }
+    })
+})
+
+router.post('/upload', multiparty, (req, res) => {
+    const info = JSON.parse(req.headers['x-access-info'])
+
+    let response = {
+        result: false
+    }
+
+    let module = ['_2', '0']
+
+    new common().CheckIdentity(info.i, info.p).then((i, _) => {
+        if (!i.result) {
+            response.message = i.message
+            res.status(200).json(response)
+        }
+        else {
+            new common().CheckPermission(info.p, module).then((i) => {
+                if (!i.result) {
+                    response.message = i.message
+                    res.status(200).json(response)
+                }
+                else {
+                    upload(req, response).then(v => {
                         res.status(200).json(v)
                     })
                 }
@@ -290,6 +322,42 @@ function add(req, res) {
     })
 }
 
+function upload(req, res) {
+    // info.passWord = md5Pwd(info.passWord)
+
+
+    return new Promise((resolve, _) => {
+        new common().Connect().then(dbo => {
+            let info = [], lineSplit = null
+            new Promise((resolve, _) => {
+                fs.readFile(req.files.file.path, function (_, data) {
+                    data.toString().split(/\r?\n/).forEach(function (line) {
+                        lineSplit = line.split(',')
+                        info.push({
+                            accountName: lineSplit[0],
+                            passWord: md5Pwd(md5(lineSplit[2])),
+                            displayName: lineSplit[1]
+                        })
+                        resolve(info)
+                    })
+                })
+            }).then(info => {
+                dbo.collection(userCollection).insertMany(info, function (err, result) {
+                    if (err) throw err;
+                    if (result.insertedCount > 0) {
+                        res.result = true
+                        res.message = '创建成功.'
+                    }
+                    else {
+                        res.message = '用户创建失败.'
+                    }
+                    resolve(res)
+                })
+            })
+        })
+    })
+}
+
 function edit(req, res) {
     return new Promise((resolve, _) => {
         new common().Connect().then((dbo) => {
@@ -455,6 +523,7 @@ function pwd(req, res) {
         })
     })
 }
+
 
 function md5Pwd(pwd) {
     const salt = 'documents_secret'
