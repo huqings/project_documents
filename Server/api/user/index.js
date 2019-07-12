@@ -323,9 +323,6 @@ function add(req, res) {
 }
 
 function upload(req, res) {
-    // info.passWord = md5Pwd(info.passWord)
-
-
     return new Promise((resolve, _) => {
         new common().Connect().then(dbo => {
             let info = [], lineSplit = null
@@ -408,7 +405,6 @@ function find(req, res) {
             user.find({
                 "_id": mongodb.ObjectId(req.body._id)
             }).toArray((_, r) => {
-
                 if (r.length > 0) {
                     res.result = true
                     res.message = r[0]
