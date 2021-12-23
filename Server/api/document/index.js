@@ -9,6 +9,7 @@ var common = require('../common')
 const usersCollection = "share.user"
 const rolesCollection = "share.role"
 const downCollection = "share.down"
+const systemCollection = "share.system"
 
 router.post('/lists', (req, res) => {
     const info = JSON.parse(req.headers['x-access-info'])
@@ -789,42 +790,49 @@ function upload(req, res) {
 
     return new Promise((resolve, _) => {
 
-        if (parseInt(optionFile.metadata.size) > parseInt(config.fileSize)) {
-            res.message = `[系统设定]:文件不能超过${config.fileSize}MB`
-            resolve(res)
-        }
-        else {
-            new common().Connect().then((dbo) => {
-                var bucket = new mongodb.GridFSBucket(dbo);
-                fs.createReadStream(req.files.file.path).
-                    pipe(bucket.openUploadStream(req.files.file.name, optionFile)).
-                    on('error', function (error) {
-                        res.message = '系统错误:' + error
-                        resolve(res)
-                    }).
-                    on('finish', function () {
-                        let z = dbo.collection(usersCollection)
-                        z.findOne({
-                            '_id': mongodb.ObjectID(optionFile.metadata.userId)
-                        }, (_, v) => {
-                            z.updateOne(
-                                {
-                                    '_id': mongodb.ObjectID(optionFile.metadata.userId),
-                                },
-                                {
-                                    $set: {
-                                        'uploadCount': v.uploadCount + 1
+        new common().Connect().then((dbo) => {
+
+            dbo.collection(systemCollection).findOne({
+                "tab": 1
+            }, (_, y) => {
+                console.log(parseInt(optionFile.metadata.size), parseInt(y.upladFileSize));
+                if (parseInt(optionFile.metadata.size) > parseInt(y.upladFileSize)) {
+                    res.message = `[系统设定]:文件大小不能超过${(parseInt(y.upladFileSize) / 1024 / 1024).toFixed(3)}MB`
+                    resolve(res)
+                }
+                else {
+                    var bucket = new mongodb.GridFSBucket(dbo);
+                    fs.createReadStream(req.files.file.path).
+                        pipe(bucket.openUploadStream(req.files.file.name, optionFile)).
+                        on('error', function (error) {
+                            res.message = '系统错误:' + error
+                            resolve(res)
+                        }).
+                        on('finish', function () {
+                            let z = dbo.collection(usersCollection)
+                            z.findOne({
+                                '_id': mongodb.ObjectID(optionFile.metadata.userId)
+                            }, (_, v) => {
+                                z.updateOne(
+                                    {
+                                        '_id': mongodb.ObjectID(optionFile.metadata.userId),
+                                    },
+                                    {
+                                        $set: {
+                                            'uploadCount': v.uploadCount + 1
+                                        }
+                                    }, () => {
+                                        res.result = true
+                                        res.message = '文档已上传成功'
+                                        resolve(res)
                                     }
-                                }, () => {
-                                    res.result = true
-                                    res.message = '文档已上传成功'
-                                    resolve(res)
-                                }
-                            )
+                                )
+                            })
                         })
-                    })
+                }
             })
-        }
+
+        })
 
     })
 

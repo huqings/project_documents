@@ -1,0 +1,4 @@
+./Client/node_modules
+./Server/node_modules
+./Other/
+.DS_Stroe

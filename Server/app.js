@@ -19,6 +19,7 @@ app.use(require('./authentication/CheckToken'))
 app.use('/dashboard', require('./api/dashboard'));
 app.use('/file', require('./api/document'));
 app.use('/user', require('./api/user'));
+app.use('/person', require('./api/person'));
 app.use('/role', require('./api/role'));
 app.use('/auth', require('./api/authorization'));
 app.use('/setting', require('./api/setting'));
